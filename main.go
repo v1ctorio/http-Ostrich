@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v3"
 )
@@ -15,7 +16,6 @@ func main() {
 	var expose bool
 	doZip := false
 	passphrase := ""
-	var files []os.File
 
 	app := &cli.Command{
 		Flags: []cli.Flag{
@@ -57,46 +57,15 @@ func main() {
 
 			destinationPath := cmd.Args().First()
 
-			fileInfo, err := os.Stat(destinationPath)
+			files, err := handleFiles(destinationPath)
+			_ = files
 
 			if err != nil {
-				log.Fatalf("Error getting file info: %v", err)
+				log.Fatalf("%v", err)
+				return nil
 			}
 
-			isDirectory := fileInfo.IsDir()
-
-			files = handleFiles(fileInfo)
-
-			if isDirectory {
-
-				if zip {
-					return nil
-				}
-
-				dir, err := os.Open(destinationPath)
-				if err != nil {
-					log.Fatalf("Error opening directory: %v", err)
-				}
-				files, err := dir.ReadDir(0)
-				if err != nil {
-					log.Fatalf("Error reading directory: %v", err)
-				}
-
-				for _, file := range files {
-
-				}
-
-			} else {
-				file, err := os.Open(destinationPath)
-				if err != nil {
-					log.Fatalf("Error opening file: %v", err)
-				}
-				defer file.Close()
-
-				files = append(files, *file)
-			}
-
-			fmt.Printf("Starting server on port %d\n serving a directory", port, isDirectory)
+			fmt.Printf("Starting server on port %d\n serving a directory", port)
 			// Here you would start your server
 			return nil
 
@@ -109,14 +78,23 @@ func main() {
 
 }
 
-func handleFiles(path os.FileInfo) ([]os.File, error) {
+func handleFiles(path string) ([]os.File, error) {
 
-	if os.FileInfo.IsDir(path) {
-		if doZip {
+	fullPath, err := filepath.Abs(path)
 
-		}
-
+	if err != nil {
+		return nil, err
 	}
+	println("%v expanded to, %v", path, fullPath)
+	fileInfo, err := os.Stat(fullPath)
+
+	if err != nil {
+		log.Fatalf("Error getting file info: %v", err)
+	}
+
+	isDirectory := fileInfo.IsDir()
+
+	_ = isDirectory
 
 	return nil, nil
 

@@ -1,4 +1,4 @@
-module example.com/gomod2nix-template
+module v1c.rocks/http-ostrich
 
 go 1.22
 
