@@ -2,13 +2,29 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
+	"html/template"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/urfave/cli/v3"
 )
+
+type APIFile struct {
+	size int
+	name int //URL encoded name of the file
+}
+
+var shareName string = "Shared files"
+
+var files []os.File
+
+//go:embed templates/root.html.tmpl
+var rootTemplate string
 
 func main() {
 
@@ -57,16 +73,14 @@ func main() {
 
 			destinationPath := cmd.Args().First()
 
-			files, err := handleFiles(destinationPath)
-			_ = files
-
+			filesish, err := handleFiles(destinationPath)
 			if err != nil {
 				log.Fatalf("%v", err)
 				return nil
 			}
+			files = filesish
 
 			fmt.Printf("Starting server on port %d\n serving a directory", port)
-			// Here you would start your server
 			return nil
 
 		},
@@ -83,8 +97,9 @@ func handleFiles(path string) ([]os.File, error) {
 	fullPath, err := filepath.Abs(path)
 
 	if err != nil {
-		return nil, err
+		log.Fatal("Error expanding")
 	}
+
 	println("%v expanded to, %v", path, fullPath)
 	fileInfo, err := os.Stat(fullPath)
 
@@ -92,10 +107,94 @@ func handleFiles(path string) ([]os.File, error) {
 		log.Fatalf("Error getting file info: %v", err)
 	}
 
+	//TODO: handle zipping
 	isDirectory := fileInfo.IsDir()
 
-	_ = isDirectory
+	if isDirectory {
 
-	return nil, nil
+		filesList, err := os.ReadDir(fullPath)
+		if err != nil {
+			return nil, err
+		}
+		var filesToReturn []os.File
+
+		err = os.Chdir(fullPath)
+
+		if err != nil {
+			log.Fatal("Error opening the directory", fullPath)
+		}
+
+		for i, e := range filesList {
+			fInfo, err := e.Info()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if fInfo.IsDir() {
+				continue
+			}
+			file, err := os.OpenFile(fInfo.Name(), os.O_RDONLY, e.Type().Perm())
+			if err != nil {
+				log.Fatal(err)
+			}
+			filesToReturn = append(filesToReturn, *file)
+			println(i, e)
+
+		}
+
+		shareName = fileInfo.Name()
+		return filesToReturn, nil
+
+	}
+	file, err := os.OpenFile(fullPath, os.O_RDONLY, fileInfo.Mode().Perm())
+
+	if err != nil {
+		return nil, err
+	}
+
+	shareName = fileInfo.Name()
+	return []os.File{*file}, nil
+
+}
+
+func httpServer(files []os.File, port int, expose bool) {
+
+	//TODO: implement not-expose
+	address := fmt.Sprintf(":%d", port)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", getRoot)
+	mux.HandleFunc("/dl", getdl)
+
+	err := http.ListenAndServe(address, mux)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func getRoot(w http.ResponseWriter, r *http.Request) {
+
+	tmpl := generateRootHTMLTemplate(TemplateData{
+		title: shareName,
+	})
+	fmt.Printf("got / request\n")
+	io.WriteString(w, "This is my website!\n")
+}
+func getHello(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got /hello request\n")
+	io.WriteString(w, "Hello, HTTP!\n")
+}
+
+type TemplateData struct {
+	title string // the shareName
+	files []os.FileInfo
+}
+
+func generateRootHTMLTemplate(data TemplateData) template.Template {
+	tmpl, err := template.New("Root").Parse(rootTemplate)
+	if err != nil {
+		log.Fatalf("Error parsing the HTML template %d", err)
+	}
+	return *tmpl
 
 }
