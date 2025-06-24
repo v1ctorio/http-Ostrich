@@ -22,6 +22,7 @@ type APIFile struct {
 var shareName string = "Shared files"
 
 var files []os.File
+var filesInfo []os.FileInfo
 
 //go:embed templates/root.html.tmpl
 var rootTemplate string
@@ -80,7 +81,8 @@ func main() {
 			}
 			files = filesish
 
-			fmt.Printf("Starting server on port %d\n serving a directory", port)
+			/*go*/
+			httpServer(port, expose)
 			return nil
 
 		},
@@ -126,6 +128,8 @@ func handleFiles(path string) ([]os.File, error) {
 
 		for i, e := range filesList {
 			fInfo, err := e.Info()
+
+			filesInfo = append(filesInfo, fInfo)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -147,6 +151,12 @@ func handleFiles(path string) ([]os.File, error) {
 	}
 	file, err := os.OpenFile(fullPath, os.O_RDONLY, fileInfo.Mode().Perm())
 
+	uniqueFileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	filesInfo = []os.FileInfo{uniqueFileInfo}
+
 	if err != nil {
 		return nil, err
 	}
@@ -156,15 +166,16 @@ func handleFiles(path string) ([]os.File, error) {
 
 }
 
-func httpServer(files []os.File, port int, expose bool) {
+func httpServer(port int, expose bool) {
 
 	//TODO: implement not-expose
 	address := fmt.Sprintf(":%d", port)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
-	mux.HandleFunc("/dl", getdl)
+	//mux.HandleFunc("/dl", getdl)
 
+	println("Started listening in ", address)
 	err := http.ListenAndServe(address, mux)
 
 	if err != nil {
@@ -172,25 +183,27 @@ func httpServer(files []os.File, port int, expose bool) {
 	}
 }
 
+type TemplateData struct {
+	Title string // the shareName
+	Files []os.FileInfo
+}
+
 func getRoot(w http.ResponseWriter, r *http.Request) {
 
-	tmpl := generateRootHTMLTemplate(TemplateData{
-		title: shareName,
-	})
-	fmt.Printf("got / request\n")
-	io.WriteString(w, "This is my website!\n")
+	data := TemplateData{
+		Title: shareName,
+		Files: filesInfo,
+	}
+	tmpl := generateRootHTMLTemplate()
+	fmt.Print("got / request\n", data.Title)
+	tmpl.Execute(w, data)
 }
 func getHello(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got /hello request\n")
 	io.WriteString(w, "Hello, HTTP!\n")
 }
 
-type TemplateData struct {
-	title string // the shareName
-	files []os.FileInfo
-}
-
-func generateRootHTMLTemplate(data TemplateData) template.Template {
+func generateRootHTMLTemplate() template.Template {
 	tmpl, err := template.New("Root").Parse(rootTemplate)
 	if err != nil {
 		log.Fatalf("Error parsing the HTML template %d", err)
