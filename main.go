@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	_ "embed"
+	b64 "encoding/base64"
 	"fmt"
 	"html/template"
 	"io"
@@ -28,11 +29,12 @@ var filesInfo []os.FileInfo
 //go:embed templates/root.html.tmpl
 var rootTemplate string
 
+var doZip bool = false
+
 func main() {
 
 	var port int
 	var expose bool
-	doZip := false
 	passphrase := ""
 
 	app := &cli.Command{
@@ -83,7 +85,7 @@ func main() {
 			_ = filesish
 
 			/*go*/
-			httpServer(port, expose)
+			httpServer(port, expose, passphrase)
 			return nil
 
 		},
@@ -163,7 +165,7 @@ func handleFiles(path string) ([]os.File, error) {
 
 }
 
-func httpServer(port int, expose bool) {
+func httpServer(port int, expose bool, passphrase string) {
 
 	//TODO: implement not-expose
 	address := fmt.Sprintf(":%d", port)
@@ -172,15 +174,23 @@ func httpServer(port int, expose bool) {
 		address = fmt.Sprintf("localhost%s", address)
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", getRoot)
-	mux.HandleFunc("/dl", getdl)
 
-	println("Started listening in ", address)
+	if passphrase != "" {
+
+		mux.Handle("/", authMiddleware(http.HandlerFunc(getRoot), passphrase))
+		mux.Handle("/dl", authMiddleware(http.HandlerFunc(getdl), passphrase))
+	} else {
+		mux.HandleFunc("/", getRoot)
+		mux.HandleFunc("/dl", getdl)
+	}
+
+	println("Started listening in ", address, " with authentication: ", passphrase)
 	err := http.ListenAndServe(address, mux)
 
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 type TemplateData struct {
@@ -261,4 +271,29 @@ func generateRootHTMLTemplate() template.Template {
 	}
 	return *tmpl
 
+}
+
+func authMiddleware(next http.Handler, passphrase string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Recived a request, checking auth")
+		auth := r.Header.Get("Authorization")
+		dec, err := b64.StdEncoding.DecodeString(auth)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, "Error parsing the authentication")
+			return
+		}
+		auth = string(dec)
+
+		fmt.Printf("Tried to access using %s", auth)
+		if auth != passphrase {
+			w.Header().Add("WWW-Authenticate", "Basic realm=\"401\"")
+			w.WriteHeader(http.StatusUnauthorized)
+			io.WriteString(w, "Authentication required.")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+
+	})
 }
