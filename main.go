@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	_ "embed"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -21,7 +23,6 @@ type APIFile struct {
 
 var shareName string = "Shared files"
 
-var files []os.File
 var filesInfo []os.FileInfo
 
 //go:embed templates/root.html.tmpl
@@ -79,7 +80,7 @@ func main() {
 				log.Fatalf("%v", err)
 				return nil
 			}
-			files = filesish
+			_ = filesish
 
 			/*go*/
 			httpServer(port, expose)
@@ -157,10 +158,6 @@ func handleFiles(path string) ([]os.File, error) {
 	}
 	filesInfo = []os.FileInfo{uniqueFileInfo}
 
-	if err != nil {
-		return nil, err
-	}
-
 	shareName = fileInfo.Name()
 	return []os.File{*file}, nil
 
@@ -171,9 +168,12 @@ func httpServer(port int, expose bool) {
 	//TODO: implement not-expose
 	address := fmt.Sprintf(":%d", port)
 
+	if !expose {
+		address = fmt.Sprintf("localhost%s", address)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
-	//mux.HandleFunc("/dl", getdl)
+	mux.HandleFunc("/dl", getdl)
 
 	println("Started listening in ", address)
 	err := http.ListenAndServe(address, mux)
@@ -198,13 +198,64 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("got / request\n", data.Title)
 	tmpl.Execute(w, data)
 }
-func getHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /hello request\n")
-	io.WriteString(w, "Hello, HTTP!\n")
+func getdl(w http.ResponseWriter, r *http.Request) {
+	parsedURL, err := url.Parse(r.RequestURI)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	params, _ := url.ParseQuery(parsedURL.RawQuery)
+
+	requestedFile := params.Get("f")
+
+	if requestedFile == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "File to be downloaded not specified")
+		return
+	}
+
+	requestedFile, _ = url.QueryUnescape(requestedFile)
+
+	var allowedFile os.FileInfo = nil
+	for _, f := range filesInfo {
+		if f.Name() == requestedFile {
+			allowedFile = f
+		}
+	}
+	if allowedFile == nil {
+		w.WriteHeader(http.StatusNotFound)
+		io.WriteString(w, "File not found or not shared")
+		return
+	}
+
+	file, err := os.OpenFile(requestedFile, os.O_RDONLY, allowedFile.Mode().Perm())
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "Error opening the requested file")
+		return
+	}
+
+	defer file.Close()
+	reader := bufio.NewReader(file)
+
+	w.Header().Add("Content-Type", "application/octet-stream")
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", allowedFile.Name()))
+	w.WriteHeader(http.StatusOK)
+	reader.WriteTo(w)
+
+	fmt.Printf("got /dl request for %s\n", requestedFile)
 }
 
 func generateRootHTMLTemplate() template.Template {
-	tmpl, err := template.New("Root").Parse(rootTemplate)
+
+	funcMap := template.FuncMap{
+		"escape": func(s string) string {
+			return url.QueryEscape(s)
+		},
+	}
+	tmpl, err := template.New("Root").Funcs(funcMap).Parse(rootTemplate)
 	if err != nil {
 		log.Fatalf("Error parsing the HTML template %d", err)
 	}

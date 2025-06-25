@@ -11,7 +11,9 @@
     
     <ul>
     {{ range .Files }}
-        <li>{{ .Name }}</li>
+        <li>
+            <a href="/dl?f={{.Name | escape }}">{{ .Name }}</a>
+        </li>
     {{ end }}
     </ul>
 </body>
