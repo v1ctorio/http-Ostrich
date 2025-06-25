@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 )
@@ -35,7 +36,7 @@ func main() {
 
 	var port int
 	var expose bool
-	passphrase := ""
+	passphrase := "hola"
 
 	app := &cli.Command{
 		Flags: []cli.Flag{
@@ -56,7 +57,7 @@ func main() {
 			&cli.StringFlag{
 				Name:        "passphrase",
 				Usage:       "Passphrase for basic authentication",
-				Value:       "",
+				Value:       "hola",
 				Destination: &passphrase,
 				Aliases:     []string{"a"},
 			},
@@ -277,6 +278,14 @@ func authMiddleware(next http.Handler, passphrase string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Recived a request, checking auth")
 		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			w.Header().Add("WWW-Authenticate", "Basic realm=\"401\"")
+			w.WriteHeader(http.StatusUnauthorized)
+			io.WriteString(w, "Authentication required.")
+			return
+		}
+		println("Unparse auth ", auth)
+		auth = strings.Split(auth, " ")[1] // in "Basic <encoded>" only keep the encoded part
 		dec, err := b64.StdEncoding.DecodeString(auth)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -284,6 +293,7 @@ func authMiddleware(next http.Handler, passphrase string) http.Handler {
 			return
 		}
 		auth = string(dec)
+		auth = strings.Split(auth, ":")[1] // in "user:pass" only save the pass
 
 		fmt.Printf("Tried to access using %s", auth)
 		if auth != passphrase {
