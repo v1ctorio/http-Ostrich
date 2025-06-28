@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	_ "embed"
 	b64 "encoding/base64"
@@ -26,6 +25,7 @@ type APIFile struct {
 var shareName string = "Shared files"
 
 var filesInfo []os.FileInfo
+var files []*os.File
 
 //go:embed templates/root.html.tmpl
 var rootTemplate string
@@ -136,11 +136,13 @@ func handleFiles(path string) error {
 
 		for i, e := range filesList {
 			fInfo, err := e.Info()
+			panic(err)
+			file, err := os.OpenFile(e.Name(), os.O_RDONLY, fInfo.Mode().Perm())
+			panic(err)
+			files = append(files, file)
 
 			filesInfo = append(filesInfo, fInfo)
-			if err != nil {
-				log.Fatal(err)
-			}
+			panic(err)
 			if fInfo.IsDir() {
 				continue
 			}
@@ -153,12 +155,19 @@ func handleFiles(path string) error {
 
 	}
 	file, err := os.OpenFile(fullPath, os.O_RDONLY, fileInfo.Mode().Perm())
+	if err != nil {
+		return err
+	}
 
 	uniqueFileInfo, err := file.Stat()
 	if err != nil {
 		return err
 	}
+
+	defer file.Close()
+
 	filesInfo = []os.FileInfo{uniqueFileInfo}
+	files = []*os.File{file}
 
 	shareName = fileInfo.Name()
 	return nil
@@ -227,33 +236,27 @@ func getdl(w http.ResponseWriter, r *http.Request) {
 
 	requestedFile, _ = url.QueryUnescape(requestedFile)
 
-	var allowedFile os.FileInfo = nil
-	for _, f := range filesInfo {
+	var allowedFile int = -1
+	for i, f := range filesInfo {
 		if f.Name() == requestedFile {
-			allowedFile = f
+			allowedFile = i
 		}
 	}
-	if allowedFile == nil {
+	if allowedFile == -1 {
 		w.WriteHeader(http.StatusNotFound)
 		io.WriteString(w, "File not found or not shared")
 		return
 	}
 
-	file, err := os.OpenFile(requestedFile, os.O_RDONLY, allowedFile.Mode().Perm())
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Error opening the requested file")
-		return
-	}
+	allowedFileInfo := filesInfo[allowedFile]
+	file := files[allowedFile]
 
 	defer file.Close()
-	reader := bufio.NewReader(file)
 
 	w.Header().Add("Content-Type", "application/octet-stream")
-	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", allowedFile.Name()))
+	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", allowedFileInfo.Name()))
 	w.WriteHeader(http.StatusOK)
-	reader.WriteTo(w)
+	io.Copy(w, file)
 
 	fmt.Printf("got /dl request for %s\n", requestedFile)
 }
@@ -307,4 +310,11 @@ func authMiddleware(next http.Handler, passphrase string) http.Handler {
 }
 
 func logBox() {
+}
+
+func panic(err error) {
+
+	if err != nil {
+		log.Printf("Panic! %d \n", err)
+	}
 }
