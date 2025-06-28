@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	b64 "encoding/base64"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -31,6 +32,7 @@ var files []*os.File
 var rootTemplate string
 
 var doZip bool = false
+var recursive bool = false
 
 func main() {
 
@@ -67,10 +69,11 @@ func main() {
 				Destination: &doZip,
 			},
 			&cli.BoolFlag{
-				Name:    "recursive",
-				Usage:   "",
-				Value:   false,
-				Aliases: []string{"r"},
+				Name:        "recursive",
+				Usage:       "",
+				Value:       false,
+				Aliases:     []string{"r"},
+				Destination: &recursive,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -81,12 +84,16 @@ func main() {
 				return nil
 			}
 
-			destinationPath := cmd.Args().First()
+			args := cmd.Args().Slice()
 
-			err := handleFiles(destinationPath)
+			err := handleFiles(args)
 			if err != nil {
 				log.Fatalf("%v", err)
 				return nil
+			}
+
+			if len(files) == 0 {
+				log.Fatalf("No files found to server. Aborting")
 			}
 
 			/*go*/
@@ -103,31 +110,30 @@ func main() {
 
 }
 
-func handleFiles(path string) error {
+func handleFiles(args []string) error {
 
-	fullPath, err := filepath.Abs(path)
+	if recursive {
+		directory := args[0]
+		fullPath, err := filepath.Abs(directory)
+		if err != nil {
+			log.Fatal("Error expanding")
+		}
+		println("%v expanded to, %v", directory, fullPath)
+		dirInfo, err := os.Stat(fullPath)
+		if err != nil {
+			log.Fatalf("Error getting dir info: %v", err)
+		}
 
-	if err != nil {
-		log.Fatal("Error expanding")
-	}
+		//TODO: handle zipping
+		isDirectory := dirInfo.IsDir()
 
-	println("%v expanded to, %v", path, fullPath)
-	fileInfo, err := os.Stat(fullPath)
-
-	if err != nil {
-		log.Fatalf("Error getting file info: %v", err)
-	}
-
-	//TODO: handle zipping
-	isDirectory := fileInfo.IsDir()
-
-	if isDirectory {
-
+		if !isDirectory {
+			return errors.New("directory was not provided but recursive flag is set.")
+		}
 		filesList, err := os.ReadDir(fullPath)
 		if err != nil {
 			return err
 		}
-
 		err = os.Chdir(fullPath)
 
 		if err != nil {
@@ -150,26 +156,37 @@ func handleFiles(path string) error {
 
 		}
 
-		shareName = fileInfo.Name()
+		shareName = dirInfo.Name()
 		return nil
-
-	}
-	file, err := os.OpenFile(fullPath, os.O_RDONLY, fileInfo.Mode().Perm())
-	if err != nil {
-		return err
 	}
 
-	uniqueFileInfo, err := file.Stat()
-	if err != nil {
-		return err
+	for _, fileName := range args {
+
+		fullPath, err := filepath.Abs(fileName)
+		fmt.Println("Expanded ", fileName, fullPath)
+		if err != nil {
+			return errors.New("error expanding the provided path")
+		}
+
+		file, err := os.OpenFile(fullPath, os.O_RDONLY, 0)
+		if err != nil {
+			return err
+		}
+
+		fInfo, err := file.Stat()
+		if err != nil {
+			return err
+		}
+		if fInfo.IsDir() {
+			log.Println("Skipping file because it is a directory and the recursive flag is not set ", file.Name())
+			file.Close()
+			continue
+		}
+
+		filesInfo = append(filesInfo, fInfo)
+		files = append(files, file)
 	}
 
-	defer file.Close()
-
-	filesInfo = []os.FileInfo{uniqueFileInfo}
-	files = []*os.File{file}
-
-	shareName = fileInfo.Name()
 	return nil
 
 }
@@ -315,6 +332,6 @@ func logBox() {
 func panic(err error) {
 
 	if err != nil {
-		log.Printf("Panic! %d \n", err)
+		log.Fatalf("Panic! %d \n", err)
 	}
 }
