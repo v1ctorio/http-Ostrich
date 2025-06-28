@@ -143,7 +143,7 @@ func handleFiles(args []string) error {
 		for i, e := range filesList {
 			fInfo, err := e.Info()
 			panic(err)
-			file, err := os.OpenFile(e.Name(), os.O_RDONLY, fInfo.Mode().Perm())
+			file, err := os.Open(e.Name())
 			panic(err)
 			files = append(files, file)
 
@@ -168,7 +168,7 @@ func handleFiles(args []string) error {
 			return errors.New("error expanding the provided path")
 		}
 
-		file, err := os.OpenFile(fullPath, os.O_RDONLY, 0)
+		file, err := os.Open(fullPath)
 		if err != nil {
 			return err
 		}
