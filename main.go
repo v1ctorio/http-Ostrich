@@ -36,7 +36,6 @@ func main() {
 
 	var port int
 	var expose bool
-	passphrase := "hola"
 
 	app := &cli.Command{
 		Flags: []cli.Flag{
@@ -55,11 +54,10 @@ func main() {
 				Aliases:     []string{"e"},
 			},
 			&cli.StringFlag{
-				Name:        "passphrase",
-				Usage:       "Passphrase for basic authentication",
-				Value:       "hola",
-				Destination: &passphrase,
-				Aliases:     []string{"a"},
+				Name:    "passphrase",
+				Usage:   "Passphrase for basic authentication",
+				Value:   "",
+				Aliases: []string{"a"},
 			},
 			&cli.BoolFlag{
 				Name:        "zip",
@@ -68,9 +66,16 @@ func main() {
 				Aliases:     []string{"z"},
 				Destination: &doZip,
 			},
+			&cli.BoolFlag{
+				Name:    "recursive",
+				Usage:   "",
+				Value:   false,
+				Aliases: []string{"r"},
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
+			passphrase := cmd.String("passphrase")
 			if cmd.Args().Len() < 1 {
 				fmt.Println("No command provided, exiting")
 				return nil
@@ -78,14 +83,14 @@ func main() {
 
 			destinationPath := cmd.Args().First()
 
-			filesish, err := handleFiles(destinationPath)
+			err := handleFiles(destinationPath)
 			if err != nil {
 				log.Fatalf("%v", err)
 				return nil
 			}
-			_ = filesish
 
 			/*go*/
+
 			httpServer(port, expose, passphrase)
 			return nil
 
@@ -98,7 +103,7 @@ func main() {
 
 }
 
-func handleFiles(path string) ([]os.File, error) {
+func handleFiles(path string) error {
 
 	fullPath, err := filepath.Abs(path)
 
@@ -120,9 +125,8 @@ func handleFiles(path string) ([]os.File, error) {
 
 		filesList, err := os.ReadDir(fullPath)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		var filesToReturn []os.File
 
 		err = os.Chdir(fullPath)
 
@@ -140,29 +144,24 @@ func handleFiles(path string) ([]os.File, error) {
 			if fInfo.IsDir() {
 				continue
 			}
-			file, err := os.OpenFile(fInfo.Name(), os.O_RDONLY, e.Type().Perm())
-			if err != nil {
-				log.Fatal(err)
-			}
-			filesToReturn = append(filesToReturn, *file)
 			println(i, e)
 
 		}
 
 		shareName = fileInfo.Name()
-		return filesToReturn, nil
+		return nil
 
 	}
 	file, err := os.OpenFile(fullPath, os.O_RDONLY, fileInfo.Mode().Perm())
 
 	uniqueFileInfo, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	filesInfo = []os.FileInfo{uniqueFileInfo}
 
 	shareName = fileInfo.Name()
-	return []os.File{*file}, nil
+	return nil
 
 }
 
@@ -276,7 +275,6 @@ func generateRootHTMLTemplate() template.Template {
 
 func authMiddleware(next http.Handler, passphrase string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Recived a request, checking auth")
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
 			w.Header().Add("WWW-Authenticate", "Basic realm=\"401\"")
@@ -306,4 +304,7 @@ func authMiddleware(next http.Handler, passphrase string) http.Handler {
 		next.ServeHTTP(w, r)
 
 	})
+}
+
+func logBox() {
 }
