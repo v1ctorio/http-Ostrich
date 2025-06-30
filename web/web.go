@@ -30,7 +30,6 @@ func HttpServer(port int, expose bool, passphrase string, files []*os.File, file
 	FilesInfo = filesInfo
 	ShareName = shareName
 
-	//TODO: implement not-expose
 	address := fmt.Sprintf(":%d", port)
 
 	if !expose {
