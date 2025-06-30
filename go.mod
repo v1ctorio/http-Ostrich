@@ -1,4 +1,4 @@
-module v1c.rocks/http-ostrich
+module github.com/v1ctorio/http-ostrich
 
 go 1.22
 

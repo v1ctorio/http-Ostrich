@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v3"
-	"v1c.rocks/http-ostrich/web"
+	"github.com/v1ctorio/http-ostrich/web"
 )
 
 type APIFile struct {
@@ -19,33 +19,25 @@ type APIFile struct {
 }
 
 var ShareName string = "Shared files"
-
 var FilesInfo []os.FileInfo
 var Files []*os.File
-
-var doZip bool = false
-var recursive bool = false
+var recursive bool
 
 func main() {
-
-	var port int
-	var expose bool
 
 	app := &cli.Command{
 		Flags: []cli.Flag{
 			&cli.IntFlag{
-				Name:        "port",
-				Usage:       "Port to listen on",
-				Value:       8069,
-				Destination: &port,
-				Aliases:     []string{"p"},
+				Name:    "port",
+				Usage:   "Port to listen on",
+				Value:   8069,
+				Aliases: []string{"p"},
 			},
 			&cli.BoolFlag{
-				Name:        "expose",
-				Usage:       "Wether to expose the server to foreign IPs",
-				Value:       false,
-				Destination: &expose,
-				Aliases:     []string{"e"},
+				Name:    "expose",
+				Usage:   "Wether to expose the server to foreign IPs",
+				Value:   false,
+				Aliases: []string{"e"},
 			},
 			&cli.StringFlag{
 				Name:    "passphrase",
@@ -54,11 +46,10 @@ func main() {
 				Aliases: []string{"a"},
 			},
 			&cli.BoolFlag{
-				Name:        "zip",
-				Usage:       "Wether to zip the files",
-				Value:       false,
-				Aliases:     []string{"z"},
-				Destination: &doZip,
+				Name:    "zip",
+				Usage:   "Wether to zip the files",
+				Value:   false,
+				Aliases: []string{"z"},
 			},
 			&cli.BoolFlag{
 				Name:        "recursive",
@@ -69,6 +60,10 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+
+			doZip := cmd.Bool("zip")
+			port := cmd.Int("port")
+			expose := cmd.Bool("expose")
 
 			passphrase := cmd.String("passphrase")
 			if cmd.Args().Len() < 1 {
@@ -181,11 +176,6 @@ func handleFiles(args []string) error {
 
 	return nil
 
-}
-
-type TemplateData struct {
-	Title string // the shareName
-	Files []os.FileInfo
 }
 
 func logBox() {
