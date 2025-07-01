@@ -3,9 +3,10 @@ package filemanagment
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/v1ctorio/http-ostrich/logging"
 )
 
 func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInfo, []*os.File, error) {
@@ -14,14 +15,15 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 
 	if recursive {
 		directory := args[0]
+
 		fullPath, err := filepath.Abs(directory)
 		if err != nil {
-			log.Fatal("Error expanding")
+			logging.ErrorAndKill("Error expanding the provided path", err)
 		}
-		println("%v expanded to, %v", directory, fullPath)
+		logging.DebugLog("%v expanded to, %v", directory, fullPath)
 		dirInfo, err := os.Stat(fullPath)
 		if err != nil {
-			log.Fatalf("Error getting dir info: %v", err)
+			logging.ErrorAndKill("Error getting dir info", err)
 		}
 
 		//TODO: handle zipping
@@ -31,16 +33,11 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 			return nil, nil, errors.New("directory was not provided but recursive flag is set")
 		}
 		filesList, err := os.ReadDir(fullPath)
-		if err != nil {
-			return nil, nil, err
-		}
+		panic(err)
 		err = os.Chdir(fullPath)
 
-		if err != nil {
-			log.Fatal("Error opening the directory", fullPath)
-		}
-
-		for i, e := range filesList {
+		panic(err)
+		for _, e := range filesList {
 			fInfo, err := e.Info()
 			panic(err)
 			file, err := os.Open(e.Name())
@@ -50,9 +47,10 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 			FilesInfo = append(FilesInfo, fInfo)
 			panic(err)
 			if fInfo.IsDir() {
+				logging.DebugLog("Skipping directory %s", fInfo.Name())
 				continue
 			}
-			println(i, e)
+			logging.DebugLog("File discovered: %s", e.Name())
 
 		}
 
@@ -78,7 +76,7 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 			return nil, nil, err
 		}
 		if fInfo.IsDir() {
-			log.Println("Skipping file because it is a directory and the recursive flag is not set ", file.Name())
+			println("Skipping file because it is a directory and the recursive flag is not set ", file.Name())
 			file.Close()
 			continue
 		}
@@ -94,6 +92,6 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 func panic(err error) {
 
 	if err != nil {
-		log.Fatalf("Panic! %d \n", err)
+		logging.ErrorAndKill("PANIC during the file parsing", err)
 	}
 }

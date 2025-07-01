@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/v1ctorio/http-ostrich/logging"
 )
 
 var ShareName string = "Shared files"
@@ -50,7 +51,7 @@ func HttpServer(port int, expose bool, passphrase string, files []*os.File, file
 	err := http.ListenAndServe(address, mux)
 
 	if err != nil {
-		log.Fatal(err)
+		logging.ErrorAndKill("Error trying to start the file server", err)
 	}
 
 }
@@ -68,7 +69,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 func getdl(w http.ResponseWriter, r *http.Request) {
 	parsedURL, err := url.Parse(r.RequestURI)
 	if err != nil {
-		log.Print(err)
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("Error parsind the url %v", err))
 		return
 	}
 
@@ -106,7 +107,7 @@ func getdl(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, file)
 
-	fmt.Printf("got /dl request for %s\n", requestedFile)
+	logging.DebugLog("got /dl request for %s", requestedFile)
 }
 func generateRootHTMLTemplate() template.Template {
 
@@ -117,7 +118,7 @@ func generateRootHTMLTemplate() template.Template {
 	}
 	tmpl, err := template.New("Root").Funcs(funcMap).Parse(rootTemplate)
 	if err != nil {
-		log.Fatalf("Error parsing the HTML template %d", err)
+		logging.LogAndTerminate("Error parsing the HTML template %v", err)
 	}
 	return *tmpl
 

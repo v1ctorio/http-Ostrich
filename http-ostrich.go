@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"log"
 	"os"
 
 	"github.com/urfave/cli/v3"
 	filemanagment "github.com/v1ctorio/http-ostrich/file-managment"
+	"github.com/v1ctorio/http-ostrich/logging"
 	"github.com/v1ctorio/http-ostrich/web"
 )
 
@@ -54,6 +54,12 @@ func main() {
 				Aliases:     []string{"r"},
 				Destination: &recursive,
 			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Usage:   "",
+				Value:   false,
+				Aliases: []string{"v"},
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
@@ -63,10 +69,14 @@ func main() {
 			expose := cmd.Bool("expose")
 			ShareName := "Shared files"
 
+			logging.SetLogLevel(cmd.Bool("verbose"))
+
 			passphrase := cmd.String("passphrase")
 			if cmd.Args().Len() < 1 {
-				fmt.Println("No command provided, exiting")
-				return nil
+				logging.LogAndTerminate("No files provided")
+			}
+			if cmd.Args().Len() > 1 && recursive {
+				println("More than one argument provided but recursive flag is set. Only the first argument will be handled.")
 			}
 
 			args := cmd.Args().Slice()
@@ -78,7 +88,7 @@ func main() {
 			}
 
 			if len(Files) == 0 {
-				log.Fatalf("No files found to server. Aborting")
+				logging.LogAndTerminate("No files found to serve. Aborting")
 			}
 
 			/*go*/
@@ -93,8 +103,4 @@ func main() {
 		log.Fatal(err)
 	}
 
-}
-
-func logBox() {
-	// TODO: fancy cool looking box with the stuff and that
 }
