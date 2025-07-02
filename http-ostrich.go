@@ -64,7 +64,6 @@ func main() {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
 			doZip := cmd.Bool("zip")
-			_ = doZip
 			port := cmd.Int("port")
 			expose := cmd.Bool("expose")
 			ShareName := "Shared files"
@@ -85,6 +84,10 @@ func main() {
 			if err != nil {
 				log.Fatalf("%v", err)
 				return nil
+			}
+
+			if doZip {
+				FilesInfo, Files = filemanagment.ZipFiles(FilesInfo, Files)
 			}
 
 			if len(Files) == 0 {

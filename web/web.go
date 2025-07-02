@@ -100,8 +100,6 @@ func getdl(w http.ResponseWriter, r *http.Request) {
 	allowedFileInfo := FilesInfo[allowedFile]
 	file := Files[allowedFile]
 
-	defer file.Close()
-
 	w.Header().Add("Content-Type", "application/octet-stream")
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", allowedFileInfo.Name()))
 	w.WriteHeader(http.StatusOK)

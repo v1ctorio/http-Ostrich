@@ -1,8 +1,10 @@
 package filemanagment
 
 import (
+	"archive/zip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -86,6 +88,58 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 	}
 
 	return FilesInfo, Files, nil
+
+}
+
+func ZipFiles(filesInfo []os.FileInfo, Files []*os.File) ([]os.FileInfo, []*os.File) {
+	zipFile, err := os.CreateTemp("", "http-ostrich-*.zip")
+	logging.DebugLog("Created zip file %s", zipFile.Name())
+	if err != nil {
+		logging.ErrorAndKill("Error creating the temporary file", err)
+	}
+
+	zipFileInfo, err := zipFile.Stat()
+	if err != nil {
+		logging.ErrorAndKill("", err)
+	}
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	for i, f := range Files {
+		fInfo := filesInfo[i]
+		fWriterInZip, err := zipWriter.Create(fInfo.Name())
+		if err != nil {
+			logging.ErrorAndKill("Error compressing the files", err)
+		}
+		logging.DebugLog("Successfully created write in the zip file for %s", fInfo.Name())
+
+		if fInfo.IsDir() {
+			logging.DebugLog("Skipping %s since it is a directory", fInfo.Name())
+			f.Close()
+			continue
+		}
+
+		if _, err := io.Copy(fWriterInZip, f); err != nil {
+			logging.ErrorAndKill("Error trying to copy file into the zip file", err)
+		}
+		logging.DebugLog("Successfully copied file to the zip archive")
+		f.Close()
+	}
+	// err = zipWriter.Close()
+	// if err != nil {
+	// 	logging.ErrorAndKill("Error trying to close the zip writer", err)
+	// }
+	logging.DebugLog("Zip file successfully populated")
+
+	zipFile.Close()
+	logging.DebugLog("Closing to reopen in read-only mode")
+	zipFile, err = os.Open(zipFile.Name())
+	if err != nil {
+		logging.ErrorAndKill("Error re-opening the temporary zip file", err)
+	}
+
+	return []os.FileInfo{zipFileInfo}, []*os.File{zipFile}
 
 }
 

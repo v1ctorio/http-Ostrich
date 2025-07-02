@@ -96,3 +96,16 @@ if target.isDir {
 }
 }
 
+
+
+##··ZIPPING workflow (btw i dont use ai just realized this might looks like an ai prompt but like its not. AI would die trying to do this.) I just do this to organize myself and my thought bcuz im not that smart
+
+tdir = os.createtempdir()
+chdir(tdir)
+
+zipFile = os.createFile(os.join(tdir, 'archive.zip'))
+ipWriter = zip.NewWriter(archive)
+
+for archive {
+    
+}

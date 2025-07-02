@@ -8,7 +8,7 @@ import (
 
 var debugLevel bool = false
 var debug *log.Logger
-var NoColor = os.Getenv("NO_COLOR") == ""
+var Color = os.Getenv("NO_COLOR") == ""
 
 const END = "\033[0m"
 const GREEN = "\033[32m"
@@ -22,12 +22,12 @@ func LogAndTerminate(message string, v ...any) {
 }
 
 func ErrorAndKill(message string, err error) {
-	if !NoColor {
+	if Color {
 		print("\033[1m")
 	}
-	println(err, "\n", "\n") //fun fact: the builtin print function prints to stderr, idk why
+	println(fmt.Sprint(err)) //fun fact: the builtin print function prints to stderr, idk why
 
-	if !NoColor {
+	if Color {
 		print("\033[32m" + "\n")
 		print(YELLOW)
 	}
@@ -39,7 +39,7 @@ func SetLogLevel(setDebug bool) {
 
 	if setDebug {
 		debugLevel = true
-		if NoColor {
+		if Color {
 			debug = log.New(os.Stderr, GREEN+"", log.Ltime)
 
 		} else {
@@ -52,6 +52,5 @@ func DebugLog(message string, v ...any) {
 	if !debugLevel {
 		return
 	}
-	debug.Printf(message, v...)
-	debug.Print("\n", END)
+	debug.Printf(message+END, v...)
 }
