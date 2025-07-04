@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,17 +26,29 @@ type TemplateData struct {
 	Files []os.FileInfo
 }
 
-func HttpServer(port int, expose bool, passphrase string, files []*os.File, filesInfo []os.FileInfo, shareName string) {
+func GenerateListenAddress(port int, expose bool) string {
+
+	if port == 8069 {
+		var err error
+		port, err = getFreePort()
+		if err != nil {
+			logging.ErrorAndKill("Error trying to get a free port", err)
+		}
+	}
+
+	address := fmt.Sprintf(":%d", port)
+	if !expose {
+		address = fmt.Sprintf("localhost%s", address)
+	}
+	return address
+}
+
+func HttpServer(address string, passphrase string, files []*os.File, filesInfo []os.FileInfo, shareName string) string {
 
 	Files = files
 	FilesInfo = filesInfo
 	ShareName = shareName
 
-	address := fmt.Sprintf(":%d", port)
-
-	if !expose {
-		address = fmt.Sprintf("localhost%s", address)
-	}
 	mux := http.NewServeMux()
 
 	if passphrase != "" {
@@ -48,12 +61,14 @@ func HttpServer(port int, expose bool, passphrase string, files []*os.File, file
 	}
 
 	println("Started listening in ", address, " with authentication: ", passphrase)
+
 	err := http.ListenAndServe(address, mux)
 
 	if err != nil {
 		logging.ErrorAndKill("Error trying to start the file server", err)
 	}
 
+	return address
 }
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +84,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 func getdl(w http.ResponseWriter, r *http.Request) {
 	parsedURL, err := url.Parse(r.RequestURI)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("Error parsind the url %v", err))
+		fmt.Fprintf(os.Stderr, "Error parsind the url %v", err)
 		return
 	}
 
@@ -120,4 +135,16 @@ func generateRootHTMLTemplate() template.Template {
 	}
 	return *tmpl
 
+}
+
+func getFreePort() (port int, err error) {
+	var a *net.TCPAddr
+	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
+		var l *net.TCPListener
+		if l, err = net.ListenTCP("tcp", a); err == nil {
+			defer l.Close()
+			return l.Addr().(*net.TCPAddr).Port, nil
+		}
+	}
+	return
 }

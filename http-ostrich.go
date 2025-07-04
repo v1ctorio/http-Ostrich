@@ -12,11 +12,6 @@ import (
 	"github.com/v1ctorio/http-ostrich/web"
 )
 
-type APIFile struct {
-	size int
-	name int //URL encoded name of the file
-}
-
 var recursive bool
 
 func main() {
@@ -82,7 +77,7 @@ func main() {
 
 			FilesInfo, Files, err := filemanagment.HandleFiles(args, recursive, &ShareName)
 			if err != nil {
-				log.Fatalf("%v", err)
+				logging.ErrorAndKill("Error reading the provided files", err)
 				return nil
 			}
 
@@ -96,10 +91,16 @@ func main() {
 
 			/*go*/
 
-			web.HttpServer(port, expose, passphrase, Files, FilesInfo, ShareName)
+			address := web.GenerateListenAddress(port, expose)
+
+			logging.PrintInfoBox(address, passphrase, doZip, len(FilesInfo))
+
+			web.HttpServer(address, passphrase, Files, FilesInfo, ShareName)
+
 			return nil
 
 		},
+		UseShortOptionHandling: true,
 	}
 
 	if err := app.Run(context.Background(), os.Args); err != nil {

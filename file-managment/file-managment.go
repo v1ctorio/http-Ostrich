@@ -3,7 +3,6 @@ package filemanagment
 import (
 	"archive/zip"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -63,7 +62,7 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 	for _, fileName := range args {
 
 		fullPath, err := filepath.Abs(fileName)
-		fmt.Println("Expanded ", fileName, fullPath)
+		logging.DebugLog("%v expanded to, %v", fileName, fullPath)
 		if err != nil {
 			return nil, nil, errors.New("error expanding the provided path")
 		}

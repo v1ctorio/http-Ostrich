@@ -4,34 +4,24 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/Delta456/box-cli-maker/v2"
+	"github.com/gookit/color"
 )
 
 var debugLevel bool = false
 var debug *log.Logger
-var Color = os.Getenv("NO_COLOR") == ""
-
-const END = "\033[0m"
-const GREEN = "\033[32m"
-const RED = "\033[31m"
-const YELLOW = "\033[33m"
 
 func LogAndTerminate(message string, v ...any) {
-	println(fmt.Sprintf(message, v...))
-	print("\n")
+	color.Yellowln(fmt.Sprintf(message, v...))
 	os.Exit(1)
 }
 
 func ErrorAndKill(message string, err error) {
-	if Color {
-		print("\033[1m")
-	}
-	println(fmt.Sprint(err)) //fun fact: the builtin print function prints to stderr, idk why
 
-	if Color {
-		print("\033[32m" + "\n")
-		print(YELLOW)
-	}
-	println(message, END)
+	println(color.Red.Render(fmt.Sprint(err))) //fun fact: the builtin print function prints to stderr, idk why
+
+	println(color.Yellow.Renderln(message))
 	os.Exit(1)
 }
 
@@ -39,12 +29,8 @@ func SetLogLevel(setDebug bool) {
 
 	if setDebug {
 		debugLevel = true
-		if Color {
-			debug = log.New(os.Stderr, GREEN+"", log.Ltime)
+		debug = log.New(os.Stderr, "DEBUG> ", log.Ltime)
 
-		} else {
-			debug = log.New(os.Stderr, "DEBUG> ", log.Ltime)
-		}
 	}
 }
 
@@ -52,5 +38,16 @@ func DebugLog(message string, v ...any) {
 	if !debugLevel {
 		return
 	}
-	debug.Printf(message+END, v...)
+	debug.Println(color.Green.Render(fmt.Sprintf(message, v...)))
+}
+
+func PrintInfoBox(address string, passphrase string, doZip bool, fLen int) {
+	Box := box.New(box.Config{Px: 2, Py: 3, Type: "Round", Color: "Green", TitlePos: "Top"})
+
+	content := `Listening on http://%s 
+
+test`
+	content = fmt.Sprintf(content, address)
+	Box.Print("http-Ostrich", content)
+	_ = Box
 }
