@@ -60,8 +60,6 @@ func HttpServer(address string, passphrase string, files []*os.File, filesInfo [
 		mux.HandleFunc("/dl", getdl)
 	}
 
-	println("Started listening in ", address, " with authentication: ", passphrase)
-
 	err := http.ListenAndServe(address, mux)
 
 	if err != nil {

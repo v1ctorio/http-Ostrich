@@ -3,6 +3,7 @@ package filemanagment
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -36,8 +37,8 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 		filesList, err := os.ReadDir(fullPath)
 		panic(err)
 		err = os.Chdir(fullPath)
-
 		panic(err)
+		logging.DebugLog("Chdired to %s", fullPath)
 		for _, e := range filesList {
 			fInfo, err := e.Info()
 			panic(err)
@@ -90,11 +91,14 @@ func HandleFiles(args []string, recursive bool, shareName *string) ([]os.FileInf
 
 }
 
-func ZipFiles(filesInfo []os.FileInfo, Files []*os.File) ([]os.FileInfo, []*os.File) {
-	zipFile, err := os.CreateTemp("", "http-ostrich-*.zip")
-	logging.DebugLog("Created zip file %s", zipFile.Name())
+func ZipFiles(filesInfo []os.FileInfo, Files []*os.File, shareName string) ([]os.FileInfo, []*os.File) {
+
+	shareName = sanitizeAlphanumeric([]byte(shareName))
+
+	zipFile, err := os.CreateTemp("", fmt.Sprintf("http-ostrich-%s-*.zip", shareName))
+	logging.DebugLog("Created temp zip file %s", zipFile.Name())
 	if err != nil {
-		logging.ErrorAndKill("Error creating the temporary file", err)
+		logging.ErrorAndKill("Error creating the temporary zip file", err)
 	}
 
 	zipFileInfo, err := zipFile.Stat()
@@ -103,7 +107,6 @@ func ZipFiles(filesInfo []os.FileInfo, Files []*os.File) ([]os.FileInfo, []*os.F
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
 
 	for i, f := range Files {
 		fInfo := filesInfo[i]
@@ -125,10 +128,10 @@ func ZipFiles(filesInfo []os.FileInfo, Files []*os.File) ([]os.FileInfo, []*os.F
 		logging.DebugLog("Successfully copied file to the zip archive")
 		f.Close()
 	}
-	// err = zipWriter.Close()
-	// if err != nil {
-	// 	logging.ErrorAndKill("Error trying to close the zip writer", err)
-	// }
+	err = zipWriter.Close()
+	if err != nil {
+		logging.ErrorAndKill("Error trying to close the zip writer", err)
+	}
 	logging.DebugLog("Zip file successfully populated")
 
 	zipFile.Close()
@@ -147,4 +150,17 @@ func panic(err error) {
 	if err != nil {
 		logging.ErrorAndKill("PANIC during the file parsing", err)
 	}
+}
+
+func sanitizeAlphanumeric(s []byte) string {
+	j := 0
+	for _, b := range s {
+		if ('a' <= b && b <= 'z') ||
+			('A' <= b && b <= 'Z') ||
+			('0' <= b && b <= '9') {
+			s[j] = b
+			j++
+		}
+	}
+	return string(s[:j])
 }

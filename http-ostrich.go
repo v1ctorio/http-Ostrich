@@ -82,7 +82,7 @@ func main() {
 			}
 
 			if doZip {
-				FilesInfo, Files = filemanagment.ZipFiles(FilesInfo, Files)
+				FilesInfo, Files = filemanagment.ZipFiles(FilesInfo, Files, ShareName)
 			}
 
 			if len(Files) == 0 {
