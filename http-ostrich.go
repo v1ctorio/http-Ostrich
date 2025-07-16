@@ -17,6 +17,9 @@ var recursive bool
 func main() {
 
 	app := &cli.Command{
+		Name:        "http-ostrich",
+		Description: "The easy and fast http file sharing ostrich.",
+		Usage:       "The http file-sharing ostrich",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "port",
@@ -38,7 +41,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:    "zip",
-				Usage:   "Wether to zip the files",
+				Usage:   "Wether to compress the files into a zip file",
 				Value:   false,
 				Aliases: []string{"z"},
 			},
@@ -66,14 +69,13 @@ func main() {
 			logging.SetLogLevel(cmd.Bool("verbose"))
 
 			passphrase := cmd.String("passphrase")
-			if cmd.Args().Len() < 1 {
-				logging.LogAndTerminate("No files provided")
-			}
-			if cmd.Args().Len() > 1 && recursive {
-				println("More than one argument provided but recursive flag is set. Only the first argument will be handled.")
-			}
 
-			args := cmd.Args().Slice()
+			args := cmd.StringArgs("paths")
+
+			if len(args) > 1 && recursive {
+				println("More than one argument provided but recursive flag is set. Only the first argument will be handled.")
+
+			}
 
 			FilesInfo, Files, err := filemanagment.HandleFiles(args, recursive, &ShareName)
 			if err != nil {
@@ -101,6 +103,14 @@ func main() {
 
 		},
 		UseShortOptionHandling: true,
+		EnableShellCompletion:  true,
+		Arguments: []cli.Argument{
+			&cli.StringArgs{
+				Name: "paths",
+				Min:  0,
+				Max:  -1,
+			},
+		},
 	}
 
 	if err := app.Run(context.Background(), os.Args); err != nil {

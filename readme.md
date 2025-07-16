@@ -2,110 +2,47 @@
 
 The ultimate fast ready to use HTTP server for easily distributing files inside a network.
 
-## How it works (pseudocode)
-Ok this is basically a schema of what I need it to do. It will be a cli with the following flags:
+Have you ever wante to share files quickly and easily with no more than a terminal command? not any install on the client and no configuration but all the golang speed and simplicity.
 
+
+## Usage
+
+```bash
+$ http-ostrich [flags] <file1> <file2> ...
 ```
---port <port> # Port to listen on
---zip # if it is a directory, zip it and only server the zip
---no-expose # Do not reply to request outside of localhost
---passphrase # Simple HTTP basic auth to access the files
+```
+NAME:
+   http-ostrich - The http file-sharing ostrich
 
-[target] (first positional argument) # The target file or directory to serve
+USAGE:
+   http-ostrich [global options] [arguments...]
+
+DESCRIPTION:
+   The easy and fast http file sharing ostrich.
+
+GLOBAL OPTIONS:
+   --port int, -p int              Port to listen on (default: 0)
+   --expose, -e                    Wether to expose the server to foreign IPs (default: false)
+   --passphrase string, -a string  Passphrase for basic authentication
+   --zip, -z                       Wether to compress the files into a zip file (default: false)
+   --recursive, -r                 (default: false)
+   --verbose, -v                   (default: false)
+   --help, -h                      show help
 ```
 
-pseudocode:
+
+## Installation
+
+
+### with nix flakes (todo)
+```bash
+nix profile install github:v1ctorio/http-ostrich
 ```
-{port, zip, noExpose, passphrase } = args
 
-type file {
-    size: int,
-    name: string,
-    content: binary,
-}
-
-type directory {
-    files: [file],
-    name: string,
-}
+### Download with github releases (todo)
 
 
-const readTarget = readDirectory(target)
-
-const serving: directory = getServing(readTarget);
-
-const server = createServer(port, serving, noExpose)
-
-server.get('/', (req,res) => {
-    res.send(serving.files.forEach(f=> {
-        return `<a href="/f/${f.name}">${f.name} (${f.size} bytes)</a><br>`
-    }))
-})
-
-
-server.get('/f/:name', (req, res) => {
-    const file = serving.files.find(f => f.name === req.params.name)
-    if (file) {
-        res.setHeader('Content-Type', 'application/octet-stream')
-        res.setHeader('Content-Disposition', `attachment; filename="${file.name}"`)
-        res.send(file.content)
-    } else {
-        res.status(404).send('File not found')
-    }
-})
-
-
-
-
-
-fun getServing(target) {
-
-
-if target.isDir {
-    if zip {
-        const zipFile = createZipFromDirectory(target)
-        return {
-            files: [
-                {
-                    size: zipFile.size,
-                    name: target.name,
-                    content: zipFile.content
-                }
-            ],
-            name: `{target.name} (zipped)`
-        }
-    } else {
-        const files = mapFiles(target)
-        return {
-            files: files,
-            name: target.name
-        }
-    }
-
-} else {
-    return {
-        files: [
-            {
-                size: target.size,
-                name: target.name,
-                content: target.content
-            }
-        ],
-        name: target.name 
-    }
-}
-}
-
-
-
-##··ZIPPING workflow (btw i dont use ai just realized this might looks like an ai prompt but like its not. AI would die trying to do this.) I just do this to organize myself and my thought bcuz im not that smart
-
-tdir = os.createtempdir()
-chdir(tdir)
-
-zipFile = os.createFile(os.join(tdir, 'archive.zip'))
-ipWriter = zip.NewWriter(archive)
-
-for archive {
-    
-}
+### With Go (build it yourself, needs Go 1.22 installed)
+```bash
+go install github.com/v1ctorio/http-ostrich@latest
+```

@@ -44,10 +44,17 @@ func DebugLog(message string, v ...any) {
 func PrintInfoBox(address string, passphrase string, doZip bool, fLen int) {
 	Box := box.New(box.Config{Px: 2, Py: 1, Type: "Round", Color: "Green", TitlePos: "Top"})
 
-	content := `Listening on http://%s 
+	url := address
+
+	if passphrase != "" {
+		url = fmt.Sprintf("http://u:%s@%s", passphrase, address)
+	} else {
+		url = fmt.Sprintf("http://%s", address)
+	}
+	content := `Listening on %s 
 
 `
-	content = fmt.Sprintf(content, address)
+	content = fmt.Sprintf(content, url)
 	Box.Print("http-Ostrich", content)
 	_ = Box
 }
