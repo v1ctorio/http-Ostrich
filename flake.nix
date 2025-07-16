@@ -1,29 +1,53 @@
 {
-  description = "A basic gomod2nix flake";
+  description = "http-Ostrich -- The ultimate fast ready to use HTTP server for easily distributing files inside a network";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs";
+  };
+  outputs =
+    { self, nixpkgs, ... }:
+    let
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ]; # I don't have any darwin system to test
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.gomod2nix.url = "github:nix-community/gomod2nix";
-  inputs.gomod2nix.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.gomod2nix.inputs.flake-utils.follows = "flake-utils";
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
-  outputs = { self, nixpkgs, flake-utils, gomod2nix }:
-    (flake-utils.lib.eachDefaultSystem
-      (system:
+      nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
+    in
+    {
+      packages = forAllSystems (
+        system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
-
-          # The current default sdk for macOS fails to compile go projects, so we use a newer one for now.
-          # This has no effect on other platforms.
-          callPackage = pkgs.darwin.apple_sdk_11_0.callPackage or pkgs.callPackage;
+          pkgs = nixpkgsFor.${system};
         in
-        {
-          packages.default = callPackage ./. {
-            inherit (gomod2nix.legacyPackages.${system}) buildGoApplication;
+        rec {
+          http-ostrich = pkgs.buildGoModule {
+            pname = "http-ostrich";
+            version = "0.9.0";
+            src = ./.;
+            vendorHash = "sha256-HObQqhTZLvt1XeiCN7i0e1WrXjbhuIaNzpI6c+FH7KY=";#nixpkgs.lib.fakeHash;
+
+            buildInputs = [
+
+            ];
+
           };
-          devShells.default = callPackage ./shell.nix {
-            inherit (gomod2nix.legacyPackages.${system}) mkGoEnv gomod2nix;
-          };
-        })
-    );
+          default = http-ostrich;
+        }
+      );
+
+      devShells = forAllSystems (system:
+      let 
+        pkgs = nixpkgsFor.${system};
+      in 
+      {
+        default = pkgs.mkShell {
+          packages = [
+            pkgs.go
+          ];
+        };
+      }
+      );
+    };
 }

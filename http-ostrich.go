@@ -14,12 +14,15 @@ import (
 
 var recursive bool
 
+const VERSION = "0.9.0"
+
 func main() {
 
 	app := &cli.Command{
 		Name:        "http-ostrich",
 		Description: "The easy and fast http file sharing ostrich.",
 		Usage:       "The http file-sharing ostrich",
+		Version:     VERSION,
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "port",
