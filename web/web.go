@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -125,6 +126,17 @@ func generateRootHTMLTemplate() template.Template {
 	funcMap := template.FuncMap{
 		"escape": func(s string) string {
 			return url.QueryEscape(s)
+		},
+		// function borrowed (stolen and slightly edited to fit my need) from https://gist.github.com/anikitenko/b41206a49727b83a530142c76b1cb82d?permalink_comment_id=4467913#gistcomment-4467913
+		"pretty_fsize": func(bytes int64) string {
+			f := float64(bytes)
+			for _, unit := range []string{"", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"} {
+				if math.Abs(f) < 1024.0 {
+					return fmt.Sprintf("%3.1f%sB", f, unit)
+				}
+				f /= 1024.0
+			}
+			return fmt.Sprintf("%.1fYiB", f)
 		},
 	}
 	tmpl, err := template.New("Root").Funcs(funcMap).Parse(rootTemplate)

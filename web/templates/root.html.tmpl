@@ -12,7 +12,7 @@
     <ul>
     {{ range .Files }}
         <li>
-            <a href="/dl?f={{.Name | escape }}">{{ .Name }}</a>
+            <a href="/dl?f={{.Name | escape }}">{{ .Name }}</a> - {{ .Size | pretty_fsize }}
         </li>
     {{ end }}
     </ul>
