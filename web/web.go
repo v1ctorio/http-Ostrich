@@ -48,6 +48,8 @@ func GenerateListenAddress(port int, expose bool) string {
 	address := fmt.Sprintf(":%d", port)
 	if !expose {
 		address = fmt.Sprintf("localhost%s", address)
+	} else {
+		address = fmt.Sprintf("%s%s", getLocalIP(), address)
 	}
 	return address
 }
@@ -175,4 +177,14 @@ func isPortFree(port int) bool {
 	}
 
 	return false
+}
+
+func getLocalIP() string {
+	conn, err := net.Dial("udp", "1.1.1.1:80")
+	if err != nil {
+		logging.ErrorAndKill("Error trying to get the listening IP address", err)
+	}
+	defer conn.Close()
+
+	return conn.LocalAddr().(*net.UDPAddr).IP.String()
 }
