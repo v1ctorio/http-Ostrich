@@ -21,7 +21,7 @@ func main() {
 			&cli.IntFlag{
 				Name:    "port",
 				Usage:   "Port to listen on",
-				Value:   8069,
+				Value:   0,
 				Aliases: []string{"p"},
 			},
 			&cli.BoolFlag{

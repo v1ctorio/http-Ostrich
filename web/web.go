@@ -14,6 +14,8 @@ import (
 	"github.com/v1ctorio/http-ostrich/logging"
 )
 
+const DEFAULT_PORT = 8069
+
 var ShareName string = "Shared files"
 
 var FilesInfo []os.FileInfo
@@ -29,11 +31,17 @@ type TemplateData struct {
 
 func GenerateListenAddress(port int, expose bool) string {
 
-	if port == 8069 {
-		var err error
-		port, err = getFreePort()
-		if err != nil {
-			logging.ErrorAndKill("Error trying to get a free port", err)
+	if port == 0 {
+
+		if isPortFree(DEFAULT_PORT) {
+			port = DEFAULT_PORT
+		} else {
+
+			var err error
+			port, err = getFreePort()
+			if err != nil {
+				logging.ErrorAndKill("Error trying to get a free port", err)
+			}
 		}
 	}
 
@@ -157,4 +165,14 @@ func getFreePort() (port int, err error) {
 		}
 	}
 	return
+}
+
+func isPortFree(port int) bool {
+	if a, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port)); err == nil {
+		a.Close()
+		return true
+
+	}
+
+	return false
 }
