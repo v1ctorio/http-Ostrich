@@ -1,4 +1,4 @@
-# HTTP Ostrich
+# http-Ostrich
 
 The ultimate fast ready to use HTTP server for easily distributing files inside a network.
 
