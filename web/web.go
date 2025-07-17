@@ -47,9 +47,9 @@ func GenerateListenAddress(port int, expose bool) string {
 
 	address := fmt.Sprintf(":%d", port)
 	if !expose {
-		address = fmt.Sprintf("localhost%s", address)
-	} else {
 		address = fmt.Sprintf("%s%s", getLocalIP(), address)
+	} else {
+		address = fmt.Sprintf("0.0.0.0%s", address)
 	}
 	return address
 }

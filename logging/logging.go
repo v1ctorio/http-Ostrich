@@ -51,10 +51,14 @@ func PrintInfoBox(address string, passphrase string, doZip bool, fLen int) {
 	} else {
 		url = fmt.Sprintf("http://%s", address)
 	}
-	content := `Listening on %s 
-
-`
+	content := `Listening on %s`
 	content = fmt.Sprintf(content, url)
 	Box.Print("http-Ostrich", content)
 	_ = Box
+}
+
+func WarnBox(message string) {
+	Box := box.New(box.Config{Px: 2, Py: 1, Type: "Bold", Color: "Yellow", TitlePos: "Inside"})
+
+	Box.Print(color.FgYellow.Render("WARNING"), message)
 }

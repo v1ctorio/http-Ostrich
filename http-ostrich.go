@@ -80,6 +80,10 @@ func main() {
 
 			}
 
+			if passphrase == "" && expose {
+				logging.WarnBox("Server exposed to all incoming connections without authentication set. \nUse the --passphrase flag to setup authentication")
+			}
+
 			FilesInfo, Files, err := filemanagment.HandleFiles(args, recursive, &ShareName)
 			if err != nil {
 				logging.ErrorAndKill("Error reading the provided files", err)
