@@ -35,13 +35,37 @@ GLOBAL OPTIONS:
 ## Installation
 
 
-### with nix flakes 
+### With nix flakes 
 ```bash
 nix profile install github:v1ctorio/http-ostrich
 ```
 
-### Download with github releases (todo)
+### With github releases (manual installation)
 
+##### Linux bash or whatever x86_64
+Download to `~/.bin` 
+```bash
+mkdir -p ~/.bin && cd ~/.bin
+curl -L https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich-linux-x86_64 -o http-ostrich
+chmod +x http-ostrich
+```
+and add it to your PATH
+```bash
+# For bash
+echo 'export PATH="$HOME/.bin:$PATH"' >> ~/.bashrc
+# For fish
+fish_add_path ~/.bin
+```
+
+##### Windows Powershell
+```powershell
+$bindir = "$env:USERPROFILE\.bin"
+if(!(Test-Path $bindir)){md $bindir} # create the .bin dir if it doesn't exist
+cd $bindir
+iwr https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich-windows.exe -o http-ostrich.exe
+$p = [Environment]::GetEnvironmentVariable("PATH","User")
+if($p -notlike "*$bindir*"){[Environment]::SetEnvironmentVariable("PATH","$p;$bindir","User")} # Add the.bin dir to the PATH if it's not already there
+```
 
 ### With Go (build it yourself, needs Go 1.22 installed)
 ```bash
