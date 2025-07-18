@@ -16,7 +16,7 @@ import (
 
 const DEFAULT_PORT = 8069
 
-var ShareName string = "Shared files"
+var ShareName string = "Ostrich shared files"
 
 var FilesInfo []os.FileInfo
 var Files []*os.File
@@ -87,13 +87,13 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 		Files: FilesInfo,
 	}
 	tmpl := generateRootHTMLTemplate()
-	fmt.Print("got / request\n", data.Title)
+	logging.DebugLog("got / request")
 	tmpl.Execute(w, data)
 }
 func getdl(w http.ResponseWriter, r *http.Request) {
 	parsedURL, err := url.Parse(r.RequestURI)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsind the url %v", err)
+		logging.DebugLog("Error parsing the url %v", err)
 		return
 	}
 

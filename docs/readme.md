@@ -46,7 +46,7 @@ nix profile install github:v1ctorio/http-ostrich
 Download to `~/.bin` 
 ```bash
 mkdir -p ~/.bin && cd ~/.bin
-curl -L https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich-linux-x86_64 -o http-ostrich
+curl -L https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich_Linux-x86_64 -o http-ostrich
 chmod +x http-ostrich
 ```
 and add it to your PATH
@@ -57,12 +57,12 @@ echo 'export PATH="$HOME/.bin:$PATH"' >> ~/.bashrc
 fish_add_path ~/.bin
 ```
 
-##### Windows Powershell
+##### Windows Powershell (x86_64)
 ```powershell
 $bindir = "$env:USERPROFILE\.bin"
 if(!(Test-Path $bindir)){md $bindir} # create the .bin dir if it doesn't exist
 cd $bindir
-iwr https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich-windows.exe -o http-ostrich.exe
+iwr https://github.com/v1ctorio/http-ostrich/releases/latest/download/http-ostrich_Windows-x86_64.exe -o http-ostrich.exe
 $p = [Environment]::GetEnvironmentVariable("PATH","User")
 if($p -notlike "*$bindir*"){[Environment]::SetEnvironmentVariable("PATH","$p;$bindir","User")} # Add the.bin dir to the PATH if it's not already there
 ```
