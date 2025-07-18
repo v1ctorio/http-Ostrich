@@ -4,7 +4,7 @@ The ultimate fast ready to use HTTP server for easily distributing files inside 
 
 Have you ever wante to share files quickly and easily with no more than a terminal command? not any install on the client and no configuration but all the golang speed and simplicity.
 
-![Usage example video](https://vhs.charm.sh/vhs-3dMowiKbK1rMRP0Nokand3.gif)
+![Usage example video](https://vhs.charm.sh/vhs-1rQ7gJbxRc3ZAyH8GiGZko.gif)
 
 ## Usage
 
