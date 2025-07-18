@@ -9,11 +9,24 @@ import (
 	"github.com/gookit/color"
 )
 
+var NOCOLOR bool = os.Getenv("NO_COLOR") != ""
+
 var debugLevel bool = false
 var debug *log.Logger
 
 func LogAndTerminate(message string, v ...any) {
-	color.Yellowln(fmt.Sprintf(message, v...))
+	msg := color.Red.Render(fmt.Sprintf(message, v...))
+
+	if !NOCOLOR {
+		Box := box.New(box.Config{Px: 2, Py: 1, Type: "Bold", Color: "Red", TitlePos: "Inside"})
+
+		Box.Println("TERMINATING", msg)
+	} else {
+		println("TERMINATING")
+		println(msg)
+
+	}
+
 	os.Exit(1)
 }
 
@@ -42,7 +55,6 @@ func DebugLog(message string, v ...any) {
 }
 
 func PrintInfoBox(address string, passphrase string, doZip bool, fLen int) {
-	Box := box.New(box.Config{Px: 2, Py: 1, Type: "Round", Color: "Green", TitlePos: "Top"})
 
 	url := address
 
@@ -53,12 +65,25 @@ func PrintInfoBox(address string, passphrase string, doZip bool, fLen int) {
 	}
 	content := `Listening on %s`
 	content = fmt.Sprintf(content, url)
-	Box.Print("http-Ostrich", content)
-	_ = Box
+
+	if !NOCOLOR {
+		Box := box.New(box.Config{Px: 2, Py: 1, Type: "Round", Color: "Green", TitlePos: "Top"})
+
+		Box.Print("http-Ostrich", content)
+	} else {
+		println(content)
+	}
 }
 
 func WarnBox(message string) {
-	Box := box.New(box.Config{Px: 2, Py: 1, Type: "Bold", Color: "Yellow", TitlePos: "Inside"})
 
-	Box.Print(color.FgYellow.Render("WARNING"), message)
+	if !NOCOLOR {
+		Box := box.New(box.Config{Px: 2, Py: 1, Type: "Bold", Color: "Yellow", TitlePos: "Inside"})
+
+		Box.Print(color.FgYellow.Render("WARNING"), message)
+	} else {
+		println("WARNING:")
+		println(message + "\n")
+	}
+
 }

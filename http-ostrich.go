@@ -76,7 +76,7 @@ func main() {
 			args := cmd.StringArgs("paths")
 
 			if len(args) > 1 && recursive {
-				println("More than one argument provided but recursive flag is set. Only the first argument will be handled.")
+				logging.WarnBox("More than one argument provided but recursive flag is set. Only the first argument will be handled.")
 
 			}
 
