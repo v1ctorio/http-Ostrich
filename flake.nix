@@ -24,7 +24,7 @@
         rec {
           http-ostrich = pkgs.buildGoModule {
             pname = "http-ostrich";
-            version = "0.9.0";
+            version = "0.9.1";
             src = ./.;
             vendorHash = "sha256-HObQqhTZLvt1XeiCN7i0e1WrXjbhuIaNzpI6c+FH7KY=";#nixpkgs.lib.fakeHash;
 
