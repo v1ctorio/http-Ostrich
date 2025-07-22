@@ -73,3 +73,13 @@ if($p -notlike "*$bindir*"){[Environment]::SetEnvironmentVariable("PATH","$p;$bi
 ```bash
 go install github.com/v1ctorio/http-ostrich@latest
 ```
+
+
+# Features
+- Serve selected files
+- Use the `recursive` flag to serve directories
+- Use the `port` flag to specify the port to listen on (default is `8069`).
+- Use the `zip` flag to compress the provided files or directory into a zip file before serving it.
+- Use the `expose` flag to allow access from foreign IPs (default is local only).
+- Use the `passphrase` flag to set basic authentication for http.
+- Use the `verbose` flag to enable a verbose debug output log.
