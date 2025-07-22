@@ -2,6 +2,8 @@
 
 The ultimate fast ready to use HTTP server for easily distributing files inside a network.
 
+http-Ostrich is a simple cli that will spin up a HTTP server with the provided files allowing you to serve them easily and fast from the terminal to any device in your network only using a web browser. Requires no setup on the client side and minimum setup on the server side (the whole program is bundled in a single binary).
+
 Have you ever wante to share files quickly and easily with no more than a terminal command? not any install on the client and no configuration but all the golang speed and simplicity.
 
 ![Usage example video](https://vhs.charm.sh/vhs-1rQ7gJbxRc3ZAyH8GiGZko.gif)
